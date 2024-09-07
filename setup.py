@@ -27,6 +27,8 @@ setup(
     ],
     install_requires=[
         'Flask>=3.0.3',
+        'python-dateutil>=2.9.0',
+        'pytz>=2024.1',
     ],
     extras_require={
     }
