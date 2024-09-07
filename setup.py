@@ -7,8 +7,8 @@ if sys.version_info.major < 3:
 VERSION = '0.0.1'
 
 setup(
-    name='littlefish',
-    packages=['littlefish'],
+    name='littlefish3',
+    packages=['littlefish3'],
     include_package_data=True,
     version=VERSION,
     description='Flask 3 webapp utility functions by Little Fish Solutions LTD',
