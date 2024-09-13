@@ -8,7 +8,7 @@ VERSION = '0.0.1'
 
 setup(
     name='littlefish3',
-    packages=['littlefish3'],
+    packages=['littlefish3', 'littlefish3.sessiondata'],
     include_package_data=True,
     version=VERSION,
     description='Flask 3 webapp utility functions by Little Fish Solutions LTD',
