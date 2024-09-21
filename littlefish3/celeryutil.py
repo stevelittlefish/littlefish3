@@ -106,6 +106,7 @@ def init_celery(app, celery):
                 return TaskBase.__call__(self, *args, **kwargs)
 
     celery.Task = ContextTask
+    celery.set_default()
     
     return celery
 
