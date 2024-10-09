@@ -10,6 +10,8 @@ import traceback
 import pprint
 import email.utils
 import re
+from uuid import UUID
+import datetime
 
 from . import timetool
 
@@ -36,8 +38,17 @@ error_log_tag_regex = re.compile(r'^(Exception caught: )?\(([^)]+)\)')
 DEBUG_ERROR_EMAIL_SENDING = False
 
 
+class SessionEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, UUID):
+            return str(obj)
+        return super().default(obj)
+
+
 def init(app):
-    global host, port, username, password, use_tls, default_email_from, email_to_override,\
+    global host, port, username, password, use_tls, default_email_from, email_to_override, \
         dump_email_body, _configured
 
     if _configured and not app.config['TESTING']:
@@ -224,11 +235,10 @@ Message:
         # Try to append the session
         try:
             from flask import session
-            from flask.json import JSONEncoder
             session_str = json.dumps(
                 dict(**session),
                 indent=2,
-                cls=JSONEncoder
+                cls=SessionEncoder
             )
             msg = '%s\nSession:\n\n%s\n' % (msg, session_str)
         except Exception:
