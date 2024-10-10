@@ -19,14 +19,14 @@ __author__ = 'Stephen Brown (Little Fish Solutions LTD)'
 
 log = logging.getLogger(__name__)
 
-host = None
-port = None
-username = None
-password = None
-use_tls = None
-default_email_from = None
-email_to_override = None
-dump_email_body = None
+_host = None
+_port = None
+_username = None
+_password = None
+_use_tls = None
+_default_email_from = None
+_email_to_override = None
+_dump_email_body = None
 _configured = False
 _error_reporting_obscured_fields = None
 
@@ -47,27 +47,49 @@ class SessionEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def init(app):
-    global host, port, username, password, use_tls, default_email_from, email_to_override, \
-        dump_email_body, _configured
+def init(
+    smtp_host: str,
+    smtp_port: str,
+    smtp_username: str,
+    smtp_password: str,
+    smtp_use_tls: bool,
+    default_email_from: str | None = None,
+    email_to_override: str | None = None,
+    dump_email_body: bool = False,
+):
+    """
+    Initialise the mailer with the given settings
 
-    if _configured and not app.config['TESTING']:
+    :param smtp_host: The SMTP server host
+    :param smtp_port: The SMTP server port
+    :param smtp_username: The SMTP username
+    :param smtp_password: The SMTP password
+    :param smtp_use_tls: Use TLS?
+    :param default_email_from: The default email from address
+    :param email_to_override: If set, all emails will be sent to this address
+    :param dump_email_body: If set, all email bodies will be dumped to the log
+    """
+
+    global _host, _port, _username, _password, _use_tls, _default_email_from, _email_to_override, \
+        _dump_email_body, _configured
+
+    if _configured:
         raise Exception('Multiple calls to {}.init(app)'.format(__name__))
 
-    host = app.config['SMTP_HOST']
-    port = app.config['SMTP_PORT']
-    username = app.config['SMTP_USERNAME']
-    password = app.config['SMTP_PASSWORD']
-    use_tls = app.config['SMTP_USE_TLS']
+    _host = smtp_host
+    _port = smtp_port
+    _username = smtp_username
+    _password = smtp_password
+    _use_tls = smtp_use_tls
 
-    log.info('LFS Mailer using {}@{}:{}{}'.format(username, host, port, ' (TLS)' if use_tls else ''))
+    log.info('LFS Mailer using {}@{}:{}{}'.format(_username, _host, _port, ' (TLS)' if _use_tls else ''))
 
-    default_email_from = app.config['DEFAULT_EMAIL_FROM']
+    _default_email_from = default_email_from
 
     # If this is set, we will send all emails here
-    email_to_override = app.config['EMAIL_TO_OVERRIDE']
+    _email_to_override = email_to_override
     # Whether or not to dump the email body
-    dump_email_body = app.config['DUMP_EMAIL_BODY']
+    _dump_email_body = dump_email_body
 
     _configured = True
 
@@ -130,26 +152,26 @@ def send_mail(recipient_list, subject, body, html=False, from_address=None):
         raise Exception('LFS Mailer hasn\'t been configured')
 
     if from_address is None:
-        from_address = default_email_from
+        from_address = _default_email_from
     
     mime_type = 'html' if html else 'plain'
     log.debug('Sending {} mail to {}: {}'.format(mime_type, ', '.join(recipient_list), subject))
-    if dump_email_body:
+    if _dump_email_body:
         log.info(body)
 
-    s = smtplib.SMTP(host, port)
+    s = smtplib.SMTP(_host, _port)
 
-    if use_tls:
+    if _use_tls:
         s.ehlo()
         s.starttls()
         s.ehlo()
     
-    if username:
-        s.login(username, password)
+    if _username:
+        s.login(_username, _password)
 
-    if email_to_override:
+    if _email_to_override:
         subject = '[to %s] %s' % (', '.join(recipient_list), subject)
-        recipient_list = [email_to_override]
+        recipient_list = [_email_to_override]
         log.info('Using email override: %s' % ', '.join(recipient_list))
 
     msg = MIMEText(body, mime_type, 'utf-8')
