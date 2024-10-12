@@ -35,7 +35,7 @@ class CeleryEmailHandler(lfsmailer.LfsSmtpHandler):
         return message
 
 
-def get_enable_celery_error_reporting_function(site_name, from_address):
+def get_enable_celery_error_reporting_function(site_name, from_address, to_addresses, send_errors=True, send_warnings=False):
     """
     Use this to enable error reporting.  You need to put the following in your tasks.py or wherever you
     want to create your celery instance:
@@ -45,18 +45,19 @@ def get_enable_celery_error_reporting_function(site_name, from_address):
     enable_celery_email_logging = get_enable_celery_error_reporting_function('My Website [LIVE]', 'errors@mywebsite.com')
     after_setup_logger.connect(enable_celery_email_logging)
     after_setup_task_logger.connect(enable_celery_email_logging)
+
+    :param site_name: The name of the site to include in the email subject
+    :param from_address: The email address to send from
+    :param to_addresses: A list of email addresses to send to
+    :param send_errors: Whether or not to send errors
+    :param send_warnings: Whether or not to send warnings
     """
     def enable_celery_email_logging(sender, signal, logger, loglevel, logfile, format, colorize, **kwargs):
-        from celery import current_app
         log.info('>> Initialising Celery task error reporting for logger {}'.format(logger.name))
         
-        send_errors = current_app.conf['CELERY_SEND_TASK_ERROR_EMAILS']
-        send_warnings = current_app.conf['CELERY_SEND_TASK_WARNING_EMAILS']
-
         if send_errors or send_warnings:
             error_email_subject = '{} Celery ERROR!'.format(site_name)
-            celery_handler = CeleryEmailHandler(from_address, current_app.conf['ADMIN_EMAILS'],
-                                                error_email_subject)
+            celery_handler = CeleryEmailHandler(from_address, to_addresses, error_email_subject)
 
             if send_warnings:
                 celery_handler.setLevel(logging.WARNING)
@@ -68,9 +69,26 @@ def get_enable_celery_error_reporting_function(site_name, from_address):
     return enable_celery_email_logging
 
 
-def get_enable_celery_error_reporting_and_coloured_logging_function(site_name, from_address, show_timestamps):
+def get_enable_celery_error_reporting_and_coloured_logging_function(site_name, from_address, to_addresses, send_errors=True, send_warnings=False, show_timestamps=True):
+    """
+    Use this to enable error reporting and coloured logging.
+
+    :param site_name: The name of the site to include in the email subject
+    :param from_address: The email address to send from
+    :param to_addresses: A list of email addresses to send to
+    :param send_errors: Whether or not to send errors
+    :param send_warnings: Whether or not to send warnings
+    :param show_timestamps: Whether or not to show timestamps in the log
+    """
+
     # Get the email enable function
-    enable_celery_email_logging = get_enable_celery_error_reporting_function(site_name, from_address)
+    enable_celery_email_logging = get_enable_celery_error_reporting_function(
+        site_name=site_name,
+        from_address=from_address,
+        to_addresses=to_addresses,
+        send_errors=send_errors,
+        send_warnings=send_warnings,
+    )
     
     def init_celery_logging(**kwargs):
         logger = kwargs.get('logger')
@@ -176,5 +194,4 @@ def non_overlapping_block(f):
 
 def non_overlapping_discard(f):
     return non_overlapping(False)(f)
-
 
