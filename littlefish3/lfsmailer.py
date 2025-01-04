@@ -251,6 +251,8 @@ Message:
 
             msg = '%s\nRequest:\n\nurl:      %s\nmethod:   %s\nendpoint: %s\nform:     %s\n' % \
                 (msg, url, method, endpoint, form)
+        except ImportError:
+            pass
         except Exception:
             traceback.print_exc()
 
@@ -263,6 +265,8 @@ Message:
                 cls=SessionEncoder
             )
             msg = '%s\nSession:\n\n%s\n' % (msg, session_str)
+        except ImportError:
+            pass
         except Exception:
             traceback.print_exc()
         
